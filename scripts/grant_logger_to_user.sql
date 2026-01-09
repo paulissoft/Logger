@@ -1,5 +1,5 @@
 -- Grants privileges for logger objects from a user to another user
-
+set define on
 
 -- Parameters
 define from_user = '&1' -- This is the user to grant the permissions from
@@ -15,3 +15,5 @@ grant select on &from_user..logger_prefs_by_client_id to &to_user;
 grant select on &from_user..logger_logs_5_min to &to_user;
 grant select on &from_user..logger_logs_60_min to &to_user;
 grant select on &from_user..logger_logs_terse to &to_user;
+
+undefine 1 2 from_user to_user

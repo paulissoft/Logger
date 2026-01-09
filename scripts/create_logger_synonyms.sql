@@ -1,5 +1,5 @@
 -- Creates synonyms from defined user for Logger objects
-
+set define on
 
 -- Parameters
 define from_user = '&1' -- This is the user to reference Logger objects
@@ -15,3 +15,5 @@ create or replace synonym &to_user..logger_prefs_by_client_id for &from_user..lo
 create or replace synonym &to_user..logger_logs_5_min for &from_user..logger_logs_5_min;
 create or replace synonym &to_user..logger_logs_60_min for &from_user..logger_logs_60_min;
 create or replace synonym &to_user..logger_logs_terse for &from_user..logger_logs_terse;
+
+undefine 1 2 from_user to_user
