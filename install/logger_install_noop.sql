@@ -2,8 +2,7 @@
 -- This file installs a NO-OP version of the logger package that has all of the same procedures and functions
 -- but does not actually write to any tables. Additionally, it has no other object dependencies
 -- You can review the documentation at https://github.com/OraOpenSource/Logger for more information
-alter session set plsql_ccflags='logger_no_op_install:true'
-
+alter session set plsql_ccflags='logger_no_op_install:true';
 
 
 prompt *** PREREQS ***
@@ -234,8 +233,8 @@ begin
   if l_count = 0 then
     execute immediate '
 create table logger_prefs(
-  pref_name	varchar2(255),
-  pref_value	varchar2(255) not null,
+  pref_name varchar2(255),
+  pref_value  varchar2(255) not null,
   constraint logger_prefs_pk primary key (pref_name) enable
 )
     ';
@@ -533,7 +532,7 @@ begin
   if l_count = 0 then
     execute immediate '
 create table logger_logs_apex_items(
-    id				number not null,
+    id        number not null,
     log_id          number not null,
     app_session     number not null,
     item_name       varchar2(1000) not null,
@@ -667,7 +666,7 @@ prompt logger_logs_60_min
 
 create or replace force view logger_logs_60_min 
 as
-	select /*+ qb_name(logger_logs_60_min) */
+  select /*+ qb_name(logger_logs_60_min) */
     ll.id,
     ll.logger_level,
     ll.scope,
@@ -722,8 +721,8 @@ prompt logger_configure
 create or replace procedure logger_configure
 is
   -- Note: The license is defined in the package specification of the logger package
-	--
-	l_rac_lt_11_2 varchar2(50) := 'FALSE';  -- is this a RAC instance less than 11.2, no GAC support
+  --
+  l_rac_lt_11_2 varchar2(50) := 'FALSE';  -- is this a RAC instance less than 11.2, no GAC support
 
   l_apex varchar2(50) := 'FALSE';
   tbl_not_exist exception;
@@ -741,11 +740,11 @@ is
   pragma exception_init(tbl_not_exist, -942);
   pragma exception_init(pls_pkg_not_exist, -06550);
 
-	l_version constant number  := dbms_db_version.version + (dbms_db_version.release / 10);
+  l_version constant number  := dbms_db_version.version + (dbms_db_version.release / 10);
   l_pref_value logger_prefs.pref_Value%type;
   l_logger_debug boolean;
 
-	l_pref_type_logger logger_prefs.pref_type%type;
+  l_pref_type_logger logger_prefs.pref_type%type;
 
   procedure add_variable(
     p_name in varchar2,
@@ -819,17 +818,17 @@ begin
   add_variable(p_name => 'FLASHBACK_ENABLED', p_value => l_flashback);
 
   -- #64: Support to run Logger in debug mode
-	-- #127
-	-- Since this procedure will recompile Logger, if it directly references a variable in Logger
-	-- It will lock itself while trying to recompile
-	-- Work around is to pre-store the variable using execute immediate
-	execute immediate 'begin :x := logger.g_pref_type_logger; end;' using out l_pref_type_logger;
+  -- #127
+  -- Since this procedure will recompile Logger, if it directly references a variable in Logger
+  -- It will lock itself while trying to recompile
+  -- Work around is to pre-store the variable using execute immediate
+  execute immediate 'begin :x := logger.g_pref_type_logger; end;' using out l_pref_type_logger;
 
   select lp.pref_value
   into l_pref_value
   from logger_prefs lp
   where 1=1
-		and lp.pref_type = upper(l_pref_type_logger)
+    and lp.pref_type = upper(l_pref_type_logger)
     and lp.pref_name = 'LOGGER_DEBUG';
   add_variable(p_name => 'LOGGER_DEBUG', p_value => l_pref_value);
 
@@ -851,7 +850,7 @@ begin
       decode(nvl(upper(lp.pref_value), 'NONE'), 'NONE', 'FALSE', 'TRUE') value
     from logger_prefs lp
     where 1=1
-			and lp.pref_type = l_pref_type_logger
+      and lp.pref_type = l_pref_type_logger
       and lp.pref_name like 'PLUGIN_FN%'
   ) loop
     add_variable(p_name => x.name, p_value => x.value);
@@ -862,7 +861,7 @@ begin
   into l_pref_value
   from logger_prefs lp
   where 1=1
-		and lp.pref_type = upper(l_pref_type_logger)
+    and lp.pref_type = upper(l_pref_type_logger)
     and lp.pref_name = 'GLOBAL_CONTEXT_NAME';
   add_variable(p_name => 'LOGGER_CONTEXT', p_value => l_pref_value);
 
@@ -872,16 +871,16 @@ begin
   end if;
 
 
-	-- Recompile Logger
+  -- Recompile Logger
   -- #82: Need to recompile spec and body
- 	l_sql := q'!alter package logger compile PLSQL_CCFLAGS='%VARIABLES%' reuse settings!';
- 	l_sql := q'!alter package logger compile body PLSQL_CCFLAGS='%VARIABLES%' reuse settings!';
-	l_sql := replace(l_sql, '%VARIABLES%', l_variables);
-	execute immediate l_sql;
+  l_sql := q'!alter package logger compile PLSQL_CCFLAGS='%VARIABLES%' reuse settings!';
+  l_sql := q'!alter package logger compile body PLSQL_CCFLAGS='%VARIABLES%' reuse settings!';
+  l_sql := replace(l_sql, '%VARIABLES%', l_variables);
+  execute immediate l_sql;
 
   -- #31: Dropped trigger
-	-- l_sql := q'[alter trigger BI_LOGGER_LOGS compile PLSQL_CCFLAGS=']'||l_variables||q'[' reuse settings]';
-	-- execute immediate l_sql;
+  -- l_sql := q'[alter trigger BI_LOGGER_LOGS compile PLSQL_CCFLAGS=']'||l_variables||q'[' reuse settings]';
+  -- execute immediate l_sql;
 
   -- -- TODO mdsouza: 3.1.1 org l_sql := q'!alter trigger biu_logger_prefs compile PLSQL_CCFLAGS='CURRENTLY_INSTALLING:FALSE'!';
   l_sql := q'!alter trigger biu_logger_prefs compile!';
@@ -933,13 +932,13 @@ prompt Now executing LOGGER.STATUS...
 prompt
 
 begin
-	logger.status;
+  logger.status;
 end;
 /
 
 prompt *************************************************
 begin
-	logger.log_permanent('Logger version '||logger.get_pref('LOGGER_VERSION')||' installed.');
+  logger.log_permanent('Logger version '||logger.get_pref('LOGGER_VERSION')||' installed.');
 end;
 /
 

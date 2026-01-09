@@ -2,6 +2,16 @@ prompt *** UNINSTALLING LOGGER ***
 
 whenever sqlerror continue
 
+alter session set current_schema = logger_user;
+
+begin
+  if sys_context('USERENV', 'CURRENT_SCHEMA') != 'LOGGER_USER'
+  then
+    raise value_error;
+  end if;
+end;
+/
+
 prompt dropping: logger
 drop package logger;
 

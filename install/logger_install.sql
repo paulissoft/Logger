@@ -1,4 +1,6 @@
+alter session set current_schema = logger_user;
 
+alter session set plsql_ccflags='logger_no_op_install:false';
 
 prompt *** PREREQS ***
 
@@ -19,6 +21,11 @@ declare
   l_dummy pls_integer;
   l_priv_error  boolean := false;
 begin
+  if sys_context('USERENV', 'CURRENT_SCHEMA') != 'LOGGER_USER'
+  then
+    raise value_error;
+  end if;
+
   l_req_privs('CREATE SESSION') := 1;            
   l_req_privs('CREATE TABLE') := 1;
   l_req_privs('CREATE VIEW') := 1;
@@ -68,7 +75,7 @@ begin
 end;
 /
 
-whenever sqlerror continue
+-- whenever sqlerror continue
 
 
 
@@ -82,14 +89,20 @@ prompt logger_logs_seq
 declare
   l_count pls_integer;
 begin
+  if sys_context('USERENV', 'CURRENT_SCHEMA') != 'LOGGER_USER'
+  then
+    raise value_error;
+  end if;
+  
   $if $$logger_no_op_install $then
     null;
   $else
     -- SEQUENCE
     select count(1)
     into l_count
-    from user_sequences
-    where sequence_name = 'LOGGER_LOGS_SEQ';
+    from all_sequences
+    where sequence_owner = sys_context('USERENV', 'CURRENT_SCHEMA')
+      and sequence_name = 'LOGGER_LOGS_SEQ';
 
     if l_count = 0 then
       execute immediate '
@@ -111,14 +124,20 @@ prompt logger_apx_items_seq
 declare
   l_count pls_integer;
 begin
+  if sys_context('USERENV', 'CURRENT_SCHEMA') != 'LOGGER_USER'
+  then
+    raise value_error;
+  end if;
+  
   $if $$logger_no_op_install $then
     null;
   $else
     -- SEQUENCE
     select count(1)
     into l_count
-    from user_sequences
-    where sequence_name = 'LOGGER_APX_ITEMS_SEQ';
+    from all_sequences
+    where sequence_owner = sys_context('USERENV', 'CURRENT_SCHEMA')
+      and sequence_name = 'LOGGER_APX_ITEMS_SEQ';
 
     if l_count = 0 then
       execute immediate '
@@ -145,7 +164,7 @@ prompt logger_logs
 -- Initial table script built from 1.4.0
 declare
   l_count pls_integer;
-  l_nullable user_tab_columns.nullable%type;
+  l_nullable all_tab_columns.nullable%type;
 
   type typ_required_columns is table of varchar2(30) index by pls_integer;
   l_required_columns typ_required_columns;
@@ -160,11 +179,17 @@ declare
   l_new_cols typ_arr_tab_col;
 
 begin
+  if sys_context('USERENV', 'CURRENT_SCHEMA') != 'LOGGER_USER'
+  then
+    raise value_error;
+  end if;
+  
   -- Create Table
   select count(1)
   into l_count
-  from user_tables
-  where table_name = 'LOGGER_LOGS';
+  from all_tables
+  where owner = sys_context('USERENV', 'CURRENT_SCHEMA')
+    and table_name = 'LOGGER_LOGS';
 
   if l_count = 0 then
     execute immediate '
@@ -197,8 +222,9 @@ create table logger_logs(
 
     select nullable
     into l_nullable
-    from user_tab_columns
-    where table_name = 'LOGGER_LOGS'
+    from all_tab_columns
+    where owner = sys_context('USERENV', 'CURRENT_SCHEMA')
+      and table_name = 'LOGGER_LOGS'
       and column_name = upper(l_required_columns(i));
 
     if l_nullable = 'Y' then
@@ -223,8 +249,9 @@ create table logger_logs(
   for i in 1 .. l_new_cols.count loop
     select count(1)
     into l_count
-    from user_tab_columns
+    from all_tab_columns
     where 1=1
+      and owner = sys_context('USERENV', 'CURRENT_SCHEMA')
       and table_name = 'LOGGER_LOGS'
       and column_name = l_new_cols(i).column_name;
 
@@ -240,8 +267,9 @@ create table logger_logs(
     -- INDEXES
     select count(1)
     into l_count
-    from user_indexes
-    where index_name = 'LOGGER_LOGS_IDX1';
+    from all_indexes
+    where owner = sys_context('USERENV', 'CURRENT_SCHEMA')
+      and index_name = 'LOGGER_LOGS_IDX1';
 
     if l_count = 0 then
       execute immediate 'create index logger_logs_idx1 on logger_logs(time_stamp,logger_level)';
@@ -256,12 +284,18 @@ end;
 -- Drop trigger if still exists (from pre-2.1.0 releases) - Issue #31
 declare
   l_count pls_integer;
-  l_trigger_name user_triggers.trigger_name%type := 'BI_LOGGER_LOGS';
+  l_trigger_name all_triggers.trigger_name%type := 'BI_LOGGER_LOGS';
 begin
+  if sys_context('USERENV', 'CURRENT_SCHEMA') != 'LOGGER_USER'
+  then
+    raise value_error;
+  end if;
+  
   select count(1)
   into l_count
-  from user_triggers
+  from all_triggers
   where 1=1
+    and owner = sys_context('USERENV', 'CURRENT_SCHEMA')
     and trigger_name = l_trigger_name;
 
   if l_count > 0 then
@@ -276,23 +310,29 @@ prompt logger_prefs
 -- Initial table script built from 1.4.0
 declare
   l_count pls_integer;
-  l_nullable user_tab_columns.nullable%type;
+  l_nullable all_tab_columns.nullable%type;
 
   type typ_required_columns is table of varchar2(30) index by pls_integer;
   l_required_columns typ_required_columns;
 
 begin
+  if sys_context('USERENV', 'CURRENT_SCHEMA') != 'LOGGER_USER'
+  then
+    raise value_error;
+  end if;
+  
   -- Create Table
   select count(1)
   into l_count
-  from user_tables
-  where table_name = 'LOGGER_PREFS';
+  from all_tables
+  where owner = sys_context('USERENV', 'CURRENT_SCHEMA')
+    and table_name = 'LOGGER_PREFS';
 
   if l_count = 0 then
     execute immediate '
 create table logger_prefs(
-  pref_name	varchar2(255),
-  pref_value	varchar2(255) not null,
+  pref_name varchar2(255),
+  pref_value  varchar2(255) not null,
   constraint logger_prefs_pk primary key (pref_name) enable
 )
     ';
@@ -408,6 +448,11 @@ alter trigger biu_logger_prefs disable;
 
 declare
 begin
+  if sys_context('USERENV', 'CURRENT_SCHEMA') != 'LOGGER_USER'
+  then
+    raise value_error;
+  end if;
+  
   $if $$logger_no_op_install $then
     null;
   $else
@@ -458,6 +503,11 @@ declare
   l_new_col typ_tab_col;
   l_new_cols typ_arr_tab_col;
 begin
+  if sys_context('USERENV', 'CURRENT_SCHEMA') != 'LOGGER_USER'
+  then
+    raise value_error;
+  end if;
+  
 
   l_new_col.column_name := 'PREF_TYPE';
   l_new_col.data_type := 'VARCHAR2(30)';
@@ -466,8 +516,9 @@ begin
   for i in 1 .. l_new_cols.count loop
     select count(1)
     into l_count
-    from user_tab_columns
+    from all_tab_columns
     where 1=1
+      and owner = sys_context('USERENV', 'CURRENT_SCHEMA')
       and upper(table_name) = upper('logger_prefs')
       and column_name = l_new_cols(i).column_name;
 
@@ -494,10 +545,16 @@ end;
 declare
   l_count pls_integer;
 begin
+  if sys_context('USERENV', 'CURRENT_SCHEMA') != 'LOGGER_USER'
+  then
+    raise value_error;
+  end if;
+  
   select count(*)
   into l_count
-  from user_cons_columns
+  from all_cons_columns
   where 1=1
+    and owner = sys_context('USERENV', 'CURRENT_SCHEMA')
     and constraint_name = 'LOGGER_PREFS_PK'
     and column_name != 'PREF_NAME';
 
@@ -513,7 +570,7 @@ end;
 -- Ensure that pref_name is upper
 declare
   type typ_constraint is record(
-    name user_constraints.constraint_name%type,
+    name all_constraints.constraint_name%type,
     condition varchar(500)
   );
 
@@ -524,6 +581,12 @@ declare
   l_count pls_integer;
   l_sql varchar2(500);
 begin
+  if sys_context('USERENV', 'CURRENT_SCHEMA') != 'LOGGER_USER'
+  then
+    raise value_error;
+  end if;
+  
+
   l_constraint.name := 'LOGGER_PREFS_PK';
   l_constraint.condition := 'primary key (pref_type, pref_name)';
   l_constraints(l_constraints.count+1) := l_constraint;
@@ -549,8 +612,9 @@ begin
   for i in l_constraints.first .. l_constraints.last loop
     select count(1)
     into l_count
-    from user_constraints
+    from all_constraints
     where 1=1
+      and owner = sys_context('USERENV', 'CURRENT_SCHEMA')
       and table_name = 'LOGGER_PREFS'
       and constraint_name = l_constraints(i).name;
 
@@ -574,23 +638,29 @@ prompt logger_logs_apex_items
 -- Initial table script built from 1.4.0
 declare
   l_count pls_integer;
-  l_nullable user_tab_columns.nullable%type;
+  l_nullable all_tab_columns.nullable%type;
 
   type typ_required_columns is table of varchar2(30) index by pls_integer;
   l_required_columns typ_required_columns;
 
 begin
+  if sys_context('USERENV', 'CURRENT_SCHEMA') != 'LOGGER_USER'
+  then
+    raise value_error;
+  end if;
+  
 
   -- Create Table
   select count(1)
   into l_count
-  from user_tables
-  where table_name = 'LOGGER_LOGS_APEX_ITEMS';
+  from all_tables
+  where owner = sys_context('USERENV', 'CURRENT_SCHEMA')
+    and table_name = 'LOGGER_LOGS_APEX_ITEMS';
 
   if l_count = 0 then
     execute immediate '
 create table logger_logs_apex_items(
-    id				number not null,
+    id        number not null,
     log_id          number not null,
     app_session     number not null,
     item_name       varchar2(1000) not null,
@@ -608,8 +678,9 @@ create table logger_logs_apex_items(
     -- INDEXES
     select count(1)
     into l_count
-    from user_indexes
-    where index_name = 'LOGGER_APEX_ITEMS_IDX1';
+    from all_indexes
+    where owner = sys_context('USERENV', 'CURRENT_SCHEMA')
+      and index_name = 'LOGGER_APEX_ITEMS_IDX1';
 
     if l_count = 0 then
       execute immediate 'create index logger_apex_items_idx1 on logger_logs_apex_items(log_id)';
@@ -636,7 +707,7 @@ prompt logger_prefs_by_client_id
 
 declare
   l_count pls_integer;
-  l_nullable user_tab_columns.nullable%type;
+  l_nullable all_tab_columns.nullable%type;
 
   type typ_required_columns is table of varchar2(30) index by pls_integer;
   l_required_columns typ_required_columns;
@@ -644,11 +715,17 @@ declare
   l_sql varchar2(2000);
 
 begin
+  if sys_context('USERENV', 'CURRENT_SCHEMA') != 'LOGGER_USER'
+  then
+    raise value_error;
+  end if;
+  
   -- Create Table
   select count(1)
   into l_count
-  from user_tables
-  where table_name = 'LOGGER_PREFS_BY_CLIENT_ID';
+  from all_tables
+  where owner = sys_context('USERENV', 'CURRENT_SCHEMA')
+    and table_name = 'LOGGER_PREFS_BY_CLIENT_ID';
 
   if l_count = 0 then
     execute immediate q'!
@@ -698,13 +775,18 @@ prompt logger_purge_job
 
 declare
   l_count pls_integer;
-  l_job_name user_scheduler_jobs.job_name%type := 'LOGGER_PURGE_JOB';
+  l_job_name all_scheduler_jobs.job_name%type := 'LOGGER_PURGE_JOB';
 begin
+  if sys_context('USERENV', 'CURRENT_SCHEMA') != 'LOGGER_USER'
+  then
+    raise value_error;
+  end if;
   
   select count(1)
   into l_count
-  from user_scheduler_jobs
-  where job_name = l_job_name;
+  from all_scheduler_jobs
+  where owner = sys_context('USERENV', 'CURRENT_SCHEMA')
+    and job_name = l_job_name;
   
   if l_count = 0 then
     dbms_scheduler.create_job(
@@ -723,13 +805,18 @@ prompt logger_unset_prefs_by_client
 
 declare
   l_count pls_integer;
-  l_job_name user_scheduler_jobs.job_name%type := 'LOGGER_UNSET_PREFS_BY_CLIENT';
+  l_job_name all_scheduler_jobs.job_name%type := 'LOGGER_UNSET_PREFS_BY_CLIENT';
 begin
+  if sys_context('USERENV', 'CURRENT_SCHEMA') != 'LOGGER_USER'
+  then
+    raise value_error;
+  end if;
   
   select count(1)
   into l_count
-  from user_scheduler_jobs
-  where job_name = l_job_name;
+  from all_scheduler_jobs
+  where owner = sys_context('USERENV', 'CURRENT_SCHEMA')
+    and job_name = l_job_name;
   
   if l_count = 0 then
     dbms_scheduler.create_job(
@@ -779,7 +866,7 @@ prompt logger_logs_60_min
 
 create or replace force view logger_logs_60_min 
 as
-	select /*+ qb_name(logger_logs_60_min) */
+  select /*+ qb_name(logger_logs_60_min) */
     ll.id,
     ll.logger_level,
     ll.scope,
@@ -804,7 +891,7 @@ as
 
 prompt logger_logs_terse
 
-set termout off
+-- set termout off
 -- setting termout off as this view will install with an error as it depends on logger.date_text_format
 create or replace force view logger_logs_terse as
   select 
@@ -818,7 +905,7 @@ create or replace force view logger_logs_terse as
   order by id asc
 /
 
-set termout on
+-- set termout on
 
 
 
@@ -910,20 +997,20 @@ as
   */
   -- Don't change any version numbers as build script will replace with right version number
   -- #129 Don't mondify ANYTHING for the version information below as it's expect to be exactly as is
-	g_logger_version constant varchar2(10) := '3.2.0'; 
+  g_logger_version constant varchar2(10) := '3.2.0'; 
   g_logger_version_major constant pls_integer := 3;
   g_logger_version_minor constant pls_integer := 2;
   g_logger_version_patch constant pls_integer := 0;
 
-	g_context_name constant varchar2(35) := substr(sys_context('USERENV','CURRENT_SCHEMA'),1,23)||'_LOGCTX';
+  g_context_name constant varchar2(35) := substr(sys_context('USERENV','CURRENT_SCHEMA'),1,23)||'_LOGCTX';
 
   g_off constant number := 0;
   g_permanent constant number := 1;
-	g_error constant number := 2;
-	g_warning constant number := 4;
-	g_information constant number := 8;
+  g_error constant number := 2;
+  g_warning constant number := 4;
+  g_information constant number := 8;
   g_debug constant number := 16;
-	g_timing constant number := 32;
+  g_timing constant number := 32;
   g_sys_context constant number := 64;
   g_apex constant number := 128;
 
@@ -1036,9 +1123,9 @@ as
   function date_text_format (p_date in date)
     return varchar2;
 
-	function get_character_codes(
-		p_string 				in varchar2,
-		p_show_common_codes 	in boolean default true)
+  function get_character_codes(
+    p_string        in varchar2,
+    p_show_common_codes   in boolean default true)
     return varchar2;
 
   procedure log_error(
@@ -1084,8 +1171,8 @@ as
     p_params  in tab_param default logger.gc_empty_tab_param);
 
   function get_cgi_env(
-    p_show_null		in boolean default false)
-  	return clob;
+    p_show_null   in boolean default false)
+    return clob;
 
   procedure log_userenv(
     p_detail_level in varchar2 default 'USER',-- ALL, NLS, USER, INSTANCE,
@@ -1111,12 +1198,12 @@ as
       p_log_null_items in boolean default true,
       p_level in logger_logs.logger_level%type default null);
 
-	procedure time_start(
-		p_unit in varchar2,
+  procedure time_start(
+    p_unit in varchar2,
     p_log_in_table in boolean default true);
 
-	procedure time_stop(
-		p_unit in varchar2,
+  procedure time_stop(
+    p_unit in varchar2,
     p_scope in varchar2 default null);
 
   function time_stop(
@@ -1152,18 +1239,18 @@ as
     p_pref_type in logger_prefs.pref_type%type,
     p_pref_name in logger_prefs.pref_name%type);
 
-	procedure purge(
-		p_purge_after_days in varchar2 default null,
-		p_purge_min_level	in varchar2	default null);
+  procedure purge(
+    p_purge_after_days in varchar2 default null,
+    p_purge_min_level in varchar2 default null);
 
   procedure purge(
     p_purge_after_days in number default null,
     p_purge_min_level in number);
 
-	procedure purge_all;
+  procedure purge_all;
 
-	procedure status(
-		p_output_format	in varchar2 default null); -- SQL-DEVELOPER | HTML | DBMS_OUPUT
+  procedure status(
+    p_output_format in varchar2 default null); -- SQL-DEVELOPER | HTML | DBMS_OUPUT
 
   procedure sqlplus_format;
 
@@ -2289,11 +2376,11 @@ See https://github.com/OraOpenSource/Logger/issues/128 for more info!',
    * 
    *   ID LOGGER_LEVEL TEXT
    * ---- ------------ ------------------------------------------------------------------------------------------
-   *   10	       16 This is a debug message. (level = DEBUG)
-   *   11		8 This is an informational message. (level = INFORMATION)
-   *   12	4 This is a warning message. (level = WARNING)
-   *   13		2 This is an error message (level = ERROR)
-   *   14		1 This is a permanent message, good for upgrades and milestones. (level = PERMANENT)
+   *   10        16 This is a debug message. (level = DEBUG)
+   *   11   8 This is an informational message. (level = INFORMATION)
+   *   12 4 This is a warning message. (level = WARNING)
+   *   13   2 This is an error message (level = ERROR)
+   *   14   1 This is a permanent message, good for upgrades and milestones. (level = PERMANENT)
    *
    *
    * -- The following example shows how to use the p_params parameter. 
@@ -4773,39 +4860,44 @@ prompt *** CONTEXTS ***
 prompt logger_context
 
 declare
-	-- the following line is also used in a constant declaration in logger.pkb
-	-- l_ctx_name varchar2(35) := substr(sys_context('USERENV','CURRENT_SCHEMA'),1,23)||'_LOGCTX';
-	l_sql varchar2(500);
-	l_count pls_integer;
+  -- the following line is also used in a constant declaration in logger.pkb
+  -- l_ctx_name varchar2(35) := substr(sys_context('USERENV','CURRENT_SCHEMA'),1,23)||'_LOGCTX';
+  l_sql varchar2(500);
+  l_count pls_integer;
 begin
-	-- #82: determine if you can create any context first
-	select count(1)
-	into l_count
-	from session_privs sp
-	where 1=1
-		and sp.privilege = 'CREATE ANY CONTEXT';
-	
-	if l_count = 0 then
-		dbms_output.put_line('Do not have access to create context; skipping');
-	else
+  if sys_context('USERENV', 'CURRENT_SCHEMA') != 'LOGGER_USER'
+  then
+    raise value_error;
+  end if;
+  
+  -- #82: determine if you can create any context first
+  select count(1)
+  into l_count
+  from session_privs sp
+  where 1=1
+    and sp.privilege = 'CREATE ANY CONTEXT';
+  
+  if l_count = 0 then
+    dbms_output.put_line('Do not have access to create context; skipping');
+  else
 
-		l_sql := 'create or replace context %s1 using logger accessed globally';
-		execute immediate logger.sprintf(l_sql, logger.g_context_name);
+    l_sql := 'create or replace context %s1 using logger accessed globally';
+    execute immediate logger.sprintf(l_sql, logger.g_context_name);
 
-		-- #184: hack to allow for setting GLOBAL_CONTEXT_NAME
-		logger.g_can_update_logger_prefs := true;
-		merge into logger_prefs p
-		using (select 'GLOBAL_CONTEXT_NAME' pref_name, logger.g_context_name pref_value, logger.g_pref_type_logger pref_type from dual) d
-			on (1=1
-				and p.pref_type = d.pref_type
-				and p.pref_name = d.pref_name)
-		when matched then
-			update set p.pref_value = d.pref_value
-		when not matched then
-			insert (p.pref_name, p.pref_value, p.pref_type)
-			values (d.pref_name, d.pref_value, d.pref_type);
-		logger.g_can_update_logger_prefs := false;
-	end if;
+    -- #184: hack to allow for setting GLOBAL_CONTEXT_NAME
+    logger.g_can_update_logger_prefs := true;
+    merge into logger_prefs p
+    using (select 'GLOBAL_CONTEXT_NAME' pref_name, logger.g_context_name pref_value, logger.g_pref_type_logger pref_type from dual) d
+      on (1=1
+        and p.pref_type = d.pref_type
+        and p.pref_name = d.pref_name)
+    when matched then
+      update set p.pref_value = d.pref_value
+    when not matched then
+      insert (p.pref_name, p.pref_value, p.pref_type)
+      values (d.pref_name, d.pref_value, d.pref_type);
+    logger.g_can_update_logger_prefs := false;
+  end if;
 end;
 /
 
@@ -4820,14 +4912,14 @@ prompt logger_configure
 create or replace procedure logger_configure
 is
   -- Note: The license is defined in the package specification of the logger package
-	--
-	l_rac_lt_11_2 varchar2(50) := 'FALSE';  -- is this a RAC instance less than 11.2, no GAC support
+  --
+  l_rac_lt_11_2 varchar2(50) := 'FALSE';  -- is this a RAC instance less than 11.2, no GAC support
 
   l_apex varchar2(50) := 'FALSE';
   tbl_not_exist exception;
   pls_pkg_not_exist exception;
 
-  l_text_data_length user_tab_columns.data_length%type;
+  l_text_data_length all_tab_columns.data_length%type;
   l_large_text_column varchar2(50);
 
   l_sql varchar2(32767);
@@ -4839,11 +4931,11 @@ is
   pragma exception_init(tbl_not_exist, -942);
   pragma exception_init(pls_pkg_not_exist, -06550);
 
-	l_version constant number  := dbms_db_version.version + (dbms_db_version.release / 10);
+  l_version constant number  := dbms_db_version.version + (dbms_db_version.release / 10);
   l_pref_value logger_prefs.pref_Value%type;
   l_logger_debug boolean;
 
-	l_pref_type_logger logger_prefs.pref_type%type;
+  l_pref_type_logger logger_prefs.pref_type%type;
 
   procedure add_variable(
     p_name in varchar2,
@@ -4877,8 +4969,9 @@ begin
   -- In support of Issue #17 and future proofing for #30
   select data_length
   into l_text_data_length
-  from user_tab_columns
+  from all_tab_columns
   where 1=1
+    and owner = sys_context('USERENV', 'CURRENT_SCHEMA')
     and table_name = 'LOGGER_LOGS'
     and column_name = 'TEXT';
 
@@ -4917,17 +5010,17 @@ begin
   add_variable(p_name => 'FLASHBACK_ENABLED', p_value => l_flashback);
 
   -- #64: Support to run Logger in debug mode
-	-- #127
-	-- Since this procedure will recompile Logger, if it directly references a variable in Logger
-	-- It will lock itself while trying to recompile
-	-- Work around is to pre-store the variable using execute immediate
-	execute immediate 'begin :x := logger.g_pref_type_logger; end;' using out l_pref_type_logger;
+  -- #127
+  -- Since this procedure will recompile Logger, if it directly references a variable in Logger
+  -- It will lock itself while trying to recompile
+  -- Work around is to pre-store the variable using execute immediate
+  execute immediate 'begin :x := logger.g_pref_type_logger; end;' using out l_pref_type_logger;
 
   select lp.pref_value
   into l_pref_value
   from logger_prefs lp
   where 1=1
-		and lp.pref_type = upper(l_pref_type_logger)
+    and lp.pref_type = upper(l_pref_type_logger)
     and lp.pref_name = 'LOGGER_DEBUG';
   add_variable(p_name => 'LOGGER_DEBUG', p_value => l_pref_value);
 
@@ -4949,7 +5042,7 @@ begin
       decode(nvl(upper(lp.pref_value), 'NONE'), 'NONE', 'FALSE', 'TRUE') value
     from logger_prefs lp
     where 1=1
-			and lp.pref_type = l_pref_type_logger
+      and lp.pref_type = l_pref_type_logger
       and lp.pref_name like 'PLUGIN_FN%'
   ) loop
     add_variable(p_name => x.name, p_value => x.value);
@@ -4960,7 +5053,7 @@ begin
   into l_pref_value
   from logger_prefs lp
   where 1=1
-		and lp.pref_type = upper(l_pref_type_logger)
+    and lp.pref_type = upper(l_pref_type_logger)
     and lp.pref_name = 'GLOBAL_CONTEXT_NAME';
   add_variable(p_name => 'LOGGER_CONTEXT', p_value => l_pref_value);
 
@@ -4970,16 +5063,16 @@ begin
   end if;
 
 
-	-- Recompile Logger
+  -- Recompile Logger
   -- #82: Need to recompile spec and body
- 	l_sql := q'!alter package logger compile PLSQL_CCFLAGS='%VARIABLES%' reuse settings!';
- 	l_sql := q'!alter package logger compile body PLSQL_CCFLAGS='%VARIABLES%' reuse settings!';
-	l_sql := replace(l_sql, '%VARIABLES%', l_variables);
-	execute immediate l_sql;
+  l_sql := q'!alter package logger compile PLSQL_CCFLAGS='%VARIABLES%' reuse settings!';
+  l_sql := q'!alter package logger compile body PLSQL_CCFLAGS='%VARIABLES%' reuse settings!';
+  l_sql := replace(l_sql, '%VARIABLES%', l_variables);
+  execute immediate l_sql;
 
   -- #31: Dropped trigger
-	-- l_sql := q'[alter trigger BI_LOGGER_LOGS compile PLSQL_CCFLAGS=']'||l_variables||q'[' reuse settings]';
-	-- execute immediate l_sql;
+  -- l_sql := q'[alter trigger BI_LOGGER_LOGS compile PLSQL_CCFLAGS=']'||l_variables||q'[' reuse settings]';
+  -- execute immediate l_sql;
 
   -- -- TODO mdsouza: 3.1.1 org l_sql := q'!alter trigger biu_logger_prefs compile PLSQL_CCFLAGS='CURRENTLY_INSTALLING:FALSE'!';
   l_sql := q'!alter trigger biu_logger_prefs compile!';
@@ -5012,7 +5105,11 @@ PROMPT Setting Logger Level
 declare
   l_current_level logger_prefs.pref_value%type;
 begin
-
+  if sys_context('USERENV', 'CURRENT_SCHEMA') != 'LOGGER_USER'
+  then
+    raise value_error;
+  end if;
+  
   select pref_value
   into l_current_level
   from logger_prefs
@@ -5031,13 +5128,13 @@ prompt Now executing LOGGER.STATUS...
 prompt
 
 begin
-	logger.status;
+  logger.status;
 end;
 /
 
 prompt *************************************************
 begin
-	logger.log_permanent('Logger version '||logger.get_pref('LOGGER_VERSION')||' installed.');
+  logger.log_permanent('Logger version '||logger.get_pref('LOGGER_VERSION')||' installed.');
 end;
 /
 
@@ -5045,4 +5142,3 @@ end;
 prompt Recompile logger_logs_terse since it depends on logger 
 
 alter view logger_logs_terse compile;
-
