@@ -14,3 +14,5 @@ scripts/bash/user-config.sh
 
 # Temporary (while confirming all changes for #238)
 .vscode-old
+
+*~
