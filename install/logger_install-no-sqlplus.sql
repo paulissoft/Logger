@@ -1,4 +1,4 @@
-
+alter session set current_schema = logger_user;
 
 -- prompt *** PREREQS ***
 
