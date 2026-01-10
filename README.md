@@ -26,23 +26,23 @@ select * from logger_logs;
 -- This will display all the logged logs
 ```
 
-See the [Logger API](docs/Logger API.md) documentation for complete set of procedures.
+See the [Logger API](docs-old/Logger%20API.md) documentation for complete set of procedures.
 
 # Documentation
-In order to keep this page relatively small and for ease of use, the documentation has been moved to the [Logger Docs](docs). In there you you will find the following sections:
+In order to keep this page relatively small and for ease of use, the documentation has been moved to the [Logger Docs](docs-old/). In there you you will find the following sections:
 
-- [Installation](docs/Installation.md)
-- [Logger API](docs/Logger%20API.md)
-- [Plugins](docs/Plugins.md)
-- [Best Practices](docs/Best%20Practices.md)
-- [Development Guide](docs/Development%20Guide.md)
-- [3rd Party Addons](docs/Addons.md)
+- [Installation](docs-old/Installation.md)
+- [Logger API](docs-old/Logger%20API.md)
+- [Plugins](docs-old/Plugins.md)
+- [Best Practices](docs-old/Best%20Practices.md)
+- [Development Guide](docs-old/Development%20Guide.md)
+- [3rd Party Addons](docs-old/Addons.md)
 
 # Download
 It is recommended that you download a certified release (from the [releases](https://github.com/OraOpenSource/Logger/tree/master/releases) folder). The files in the current repository are for the next release and should be considered unstable.
 
 # Change Log
-The [Change Logs](docs/Change Logs.md) contain all the major updates for each release. Complete set of issues can be found on [Milestones](https://github.com/OraOpenSource/Logger/milestones?state=closed) page.
+The [Change Logs](docs-old/Change Logs.md) contain all the major updates for each release. Complete set of issues can be found on [Milestones](https://github.com/OraOpenSource/Logger/milestones?state=closed) page.
 
 # History
 Logger was originally created by [Tyler Muth](https://twitter.com/tmuth) and is now maintained by [OraOpenSource](http://www.oraopensource.com).
